@@ -2,6 +2,8 @@
 
 This project is an audio visualizer that streams data from a computer to an Arduino, which controls an LED strip. The LED strip changes colors based on the audio output from your computer. It is still a work in progress. Love Late night Ideas
 
+Wil most likely change to a esp bluethoth paired device over usb serial communication
+
 ## Hardware Requirements
 
 - Arduino (e.g., Arduino Uno)
@@ -13,7 +15,7 @@ This project is an audio visualizer that streams data from a computer to an Ardu
 ## Software Requirements
 
 - Python 3.7+
-- Arduino IDE
+- Any IDE
 - Python Libraries:
   - `sounddevice`
   - `numpy`
