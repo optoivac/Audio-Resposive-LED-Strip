@@ -2,15 +2,9 @@
 
 #define PIN 8  // Pin where the LED strip is connected
 #define NUM_LEDS 60  // Number of LEDs in the strip
-#define SMOOTHING 4  // Reduced number of values to average for more responsiveness
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
 
-int amplitudeValues[SMOOTHING];  // Array to store amplitude values for smoothing
-int amplitudeIndex = 0;
-int totalAmplitude = 0;
-
-// Function prototypes
 void setStripColor(uint32_t color);
 uint32_t calculateColor(int amplitude);
 
@@ -19,11 +13,6 @@ void setup() {
   strip.begin();
   strip.show();  // Initialize all pixels to 'off'
   Serial.println("Setup complete");
-
-  // Initialize smoothing array
-  for (int i = 0; i < SMOOTHING; i++) {
-    amplitudeValues[i] = 0;
-  }
 }
 
 void loop() {
@@ -32,40 +21,37 @@ void loop() {
     Serial.print("Received amplitude: ");  // Debug print
     Serial.println(amplitude);
 
-    // Update smoothing array
-    totalAmplitude -= amplitudeValues[amplitudeIndex];
-    amplitudeValues[amplitudeIndex] = amplitude;
-    totalAmplitude += amplitude;
-    amplitudeIndex = (amplitudeIndex + 1) % SMOOTHING;
-
-    // Calculate the average amplitude
-    int averageAmplitude = totalAmplitude / SMOOTHING;
-
-    uint32_t color = calculateColor(averageAmplitude);
+    uint32_t color = calculateColor(amplitude);
     setStripColor(color);
   }
 }
 
 uint32_t calculateColor(int amplitude) {
-  // Enhanced color mapping for better visualization
-  uint8_t red, green, blue;
-  
-  // Map the amplitude range appropriately
-  amplitude = map(amplitude, 0, 1024, 0, 255);
-  
-  if (amplitude < 85) {
-    red = amplitude * 3;
-    green = 255 - amplitude * 3;
-    blue = 0;
-  } else if (amplitude < 170) {
-    red = 255 - (amplitude - 85) * 3;
-    green = 0;
-    blue = (amplitude - 85) * 3;
-  } else {
-    red = 0;
-    green = (amplitude - 170) * 3;
-    blue = 255 - (amplitude - 170) * 3;
-  }
+  uint8_t baseValue = 3;
+  uint8_t maxAmplitude = 100;  // Adjust based on expected amplitude range
+  float factor = (float)amplitude / maxAmplitude;  // Normalize amplitude to a factor between 0 and 1
+
+  // Calculate RGB values based on amplitude
+  uint8_t red = constrain(baseValue + (255 - baseValue) * factor, 0, 255);
+  uint8_t green = constrain(baseValue + (255 - baseValue) * (1 - factor), 0, 255);
+  uint8_t blue = baseValue;  // Keep blue as the base value
+
+  // Adjust brightness based on amplitude
+  uint8_t brightness = constrain(baseValue + (255 - baseValue) * factor, 0, 255);
+
+  // Apply brightness to RGB values
+  red = (red * brightness) / 255;
+  green = (green * brightness) / 255;
+  blue = (blue * brightness) / 255;
+
+  Serial.print("Calculated color - Red: ");  // Debug print
+  Serial.print(red);
+  Serial.print(", Green: ");
+  Serial.print(green);
+  Serial.print(", Blue: ");
+  Serial.print(blue);
+  Serial.print(", Brightness: ");
+  Serial.println(brightness);
 
   return strip.Color(red, green, blue);
 }

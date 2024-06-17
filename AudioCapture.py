@@ -6,6 +6,7 @@ import time
 # Set the correct COM port
 com_port = 'COM7'  # Replace 'COM7' with the actual COM port from Device Manager
 scaling_factor = 1024  # Scale amplitude values to range 0-1024
+sampling_interval = 0.1  # Time interval between samples in seconds
 
 # Function to open the serial port with retries
 def open_serial_port(port, baud_rate, retries=5):
@@ -22,6 +23,7 @@ def open_serial_port(port, baud_rate, retries=5):
 def write_to_serial(ser, data):
     try:
         ser.write(data.encode('utf-8'))
+        print(f"Sent to serial: {data}")  # Debug print
     except serial.SerialException as e:
         print(f"Serial write failed: {e}")
 
@@ -52,15 +54,21 @@ channels = device_info['max_input_channels']
 if channels < 1:
     raise ValueError(f"Selected device does not support input channels: {device_info}")
 
-def audio_callback(indata, frames, time, status):
+last_sample_time = time.time()
+
+def audio_callback(indata, frames, time_info, status):
+    global last_sample_time
+    current_time = time.time()
     if status:
         print(status)
-    amplitude = np.max(np.abs(indata))
-    amplitude = int(amplitude * scaling_factor)  # Scale to 0-1024
-    amplitude = max(0, min(1024, amplitude))  # Ensure amplitude is within range
-    print(f"Amplitude: {amplitude}")  # Debug print
-    write_to_serial(ser, f"{amplitude}\n")
-    check_serial_connection(ser)
+    if current_time - last_sample_time >= sampling_interval:
+        amplitude = np.max(np.abs(indata))
+        amplitude = int(amplitude * scaling_factor)  # Scale to 0-1024
+        amplitude = max(0, min(1024, amplitude))  # Ensure amplitude is within range
+        print(f"Amplitude: {amplitude}")  # Debug print
+        write_to_serial(ser, f"{amplitude}\n")
+        check_serial_connection(ser)
+        last_sample_time = current_time
 
 try:
     # Start the audio stream
