@@ -25,6 +25,7 @@ as at the moment you lose range depending on the volume.
 
 ## To find the correct audio output run this:
 
+```python
 import sounddevice as sd
 
 def list_audio_output_devices():
